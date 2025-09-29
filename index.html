@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .animation-container {
+        width: 100%;
+        height: 100px;
+        border: 2px solid #333;
+        overflow: hidden;
+        position: relative;
+        background-color: #f0f0f0;
+      }
+      
+      .animated-box {
+        position: absolute;
+        white-space: nowrap;
+        font-size: 60px;
+        font-weight: bold;
+        color: #333;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Animated Page</h1>
+    <p>This is an animated page.</p>
+
+    <div class="animation-container">
+      <div class="animated-box" id="scrollingText"></div>
+    </div>
+
+    <script>
+      // Texte à faire défiler
+      const text = "MISANDEAU est certifié Qualibat, et Adhérent à la coopérative GMB (Artipôle Chemillé)";
+      let textInstances = [];
+      let animationSpeed = 2; // pixels par frame
+      let container;
+      let animationId;
+      let nextInstanceCreated = false;
+      
+      function createTextElement(isVisible = true) {
+        const textElement = document.createElement('div');
+        textElement.style.position = 'absolute';
+        textElement.style.whiteSpace = 'nowrap';
+        textElement.style.fontSize = '60px';
+        textElement.style.fontWeight = 'bold';
+        textElement.style.color = '#333';
+        textElement.style.top = '50%';
+        textElement.style.transform = 'translateY(-50%)';
+        textElement.style.display = isVisible ? 'block' : 'none';
+        textElement.textContent = text;
+        return textElement;
+      }
+      
+      function animate() {
+        const containerWidth = container.offsetWidth;        
+        // Déplacer tous les éléments de texte
+        for (let i = 0; i < textInstances.length; i++) {
+          const instance = textInstances[i];
+          instance.x -= animationSpeed;
+          instance.element.style.left = instance.x + 'px';
+        }        
+        // Supprimer les éléments qui sont complètement sortis à gauche (en parcourant à l'envers)
+        for (let i = textInstances.length - 1; i >= 0; i--) {
+          const instance = textInstances[i];
+          if (instance.x + instance.element.offsetWidth < 0) {
+            container.removeChild(instance.element);
+            textInstances.splice(i, 1);
+          }
+        }        
+        // Vérifier si on doit créer une nouvelle instance
+        if (textInstances.length > 0) {
+          const firstInstance = textInstances[0];
+          const textWidth = firstInstance.element.offsetWidth;          
+          // Créer une nouvelle instance quand la fin du premier texte couvre la moitié de la page
+          if (!nextInstanceCreated && firstInstance.x + textWidth <= containerWidth * 0.5) {
+            createNewInstance(false); // Créer invisible
+            nextInstanceCreated = true;
+          }          
+          // Rendre visible la nouvelle instance quand elle doit apparaître
+          if (textInstances.length === 2) {
+            const secondInstance = textInstances[1];
+            if (firstInstance.x + textWidth <= containerWidth * 0.45) {
+              secondInstance.element.style.display = 'block';
+            }
+          }          
+          // Réinitialiser le flag quand l'ancienne instance est supprimée
+          if (textInstances.length === 1 && nextInstanceCreated) {
+            nextInstanceCreated = false;
+          }
+        }        
+        animationId = requestAnimationFrame(animate);
+      }
+      
+      function createNewInstance(isVisible = true) {
+        const textElement = createTextElement(isVisible);
+        const containerWidth = container.offsetWidth;        
+        container.appendChild(textElement);        
+        const instance = {
+          element: textElement,
+          x: containerWidth
+        };        
+        textInstances.push(instance);
+      }
+      
+      function initScrollingText() {
+        container = document.querySelector('.animation-container');        
+        // Nettoyer les anciennes instances
+        textInstances.forEach(instance => {
+          if (instance.element.parentNode) {
+            container.removeChild(instance.element);
+          }
+        });
+        textInstances = [];
+        nextInstanceCreated = false;        
+        // Supprimer l'ancien élément scrollingText s'il existe
+        const oldElement = document.getElementById('scrollingText');
+        if (oldElement) {
+          container.removeChild(oldElement);
+        }        
+        // Créer la première instance
+        createNewInstance();        
+        // Arrêter l'ancienne animation si elle existe
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }        
+        // Démarrer l'animation
+        animate();
+      }      
+      // Initialiser quand la page est chargée
+      document.addEventListener('DOMContentLoaded', initScrollingText);      
+      // Réinitialiser si la fenêtre est redimensionnée
+      window.addEventListener('resize', initScrollingText);
+    </script>
+    <!-- MISANDEAU est certifié Qualibat, et Adhérent à la coopérative GMB (Artipôle Chemillé) -->
+  </body>
+</html>
